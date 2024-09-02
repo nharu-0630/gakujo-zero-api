@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nharu-0630/gakujo-zero-api/configs"
 	"github.com/nharu-0630/gakujo-zero-api/tools"
 )
 
@@ -48,7 +49,7 @@ func (as *AuthSession) authReq1() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("DNT", "1")
@@ -83,7 +84,7 @@ func (as *AuthSession) authReq2() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -121,7 +122,7 @@ func (as *AuthSession) authReq3() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -178,7 +179,7 @@ func (as *AuthSession) authReq4() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", as.referer)
@@ -230,7 +231,7 @@ func (as *AuthSession) authReq5() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", as.referer)
@@ -287,7 +288,7 @@ func (as *AuthSession) authReq6() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
@@ -339,7 +340,7 @@ func (as *AuthSession) authReq7() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
@@ -392,7 +393,7 @@ func (as *AuthSession) authReq8() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
@@ -449,7 +450,7 @@ func (as *AuthSession) authReq9() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", "https://login.microsoftonline.com/common/SAS/ProcessAuth")
@@ -495,7 +496,7 @@ func (as *AuthSession) authReq10() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Referer", "https://login.microsoftonline.com/")
@@ -533,7 +534,7 @@ func (as *AuthSession) authReq11() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -572,7 +573,7 @@ func (as *AuthSession) authReq12() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -623,7 +624,7 @@ func (as *AuthSession) authReq13() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
