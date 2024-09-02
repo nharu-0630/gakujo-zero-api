@@ -29,6 +29,9 @@ type AuthSession struct {
 	end        map[string]string
 	timestamp  int64
 	otp        string
+	samlReq    string
+	relayState string
+	samlRes    string
 }
 
 func NewAuthSession(c Cmd, username string, password string, secret string) *AuthSession {
@@ -420,7 +423,6 @@ func (as *AuthSession) authReq8() error {
 	if err != nil {
 		return err
 	}
-	log.Default().Println("Response Body:", string(body))
 
 	matches := re.FindStringSubmatch(string(body))
 	if len(matches) == 0 {
@@ -472,6 +474,186 @@ func (as *AuthSession) authReq9() error {
 	if resp.StatusCode != 200 {
 		return errors.New("unexpected status code")
 	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body = io.NopCloser(strings.NewReader(string(body)))
+	re := regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+	matches := re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		return errors.New("SAMLResponse not found")
+	}
+	as.samlReq = matches[1]
+	return nil
+}
+
+func (as *AuthSession) authReq10() error {
+	var data = strings.NewReader(`SAMLResponse=` + url.QueryEscape(as.samlReq) + `&RelayState=e1s2`)
+	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/Authn/SAML2/POST/SSO", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
+	req.Header.Set("Referer", "https://login.microsoftonline.com/")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://login.microsoftonline.com")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	req.Header.Set("Priority", "u=0, i")
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cache-Control", "no-cache")
+	resp, err := as.cmd.client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.New("unexpected status code")
+	}
+	csrf, err := extractCSRFToken(resp)
+	if err != nil {
+		return err
+	}
+	as.token = csrf
+	return nil
+}
+
+func (as *AuthSession) authReq11() error {
+	var data = strings.NewReader(`csrf_token=` + as.token + `&_shib_idp_consentIds=displayName&_shib_idp_consentIds=eduPersonAffiliation&_shib_idp_consentIds=eduPersonEntitlement&_shib_idp_consentIds=eduPersonPrincipalName&_shib_idp_consentIds=eduPersonScopedAffiliation&_shib_idp_consentIds=eduPersonTargetedID&_shib_idp_consentIds=employeeNumber&_shib_idp_consentIds=givenName&_shib_idp_consentIds=jaDisplayName&_shib_idp_consentIds=jaGivenName&_shib_idp_consentIds=jaOrganizationName&_shib_idp_consentIds=jaSurname&_shib_idp_consentIds=jaorganizationalUnit&_shib_idp_consentIds=mail&_shib_idp_consentIds=organizationName&_shib_idp_consentIds=organizationalUnitName&_shib_idp_consentIds=surname&_shib_idp_consentIds=uid&_shib_idp_consentOptions=_shib_idp_rememberConsent&_eventId_proceed=`)
+	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s3", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://idp.shizuoka.ac.jp")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Referer", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s3")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Priority", "u=0, i")
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cache-Control", "no-cache")
+	resp, err := as.cmd.client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.New("unexpected status code")
+	}
+	csrf, err := extractCSRFToken(resp)
+	if err != nil {
+		return err
+	}
+	as.token = csrf
+	return nil
+}
+
+func (as *AuthSession) authReq12() error {
+	var data = strings.NewReader(`csrf_token=` + as.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&_eventId_proceed=`)
+	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s4", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://idp.shizuoka.ac.jp")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Referer", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s4")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Priority", "u=0, i")
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cache-Control", "no-cache")
+	resp, err := as.cmd.client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.New("unexpected status code")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body = io.NopCloser(strings.NewReader(string(body)))
+	re := regexp.MustCompile(`<input type="hidden" name="RelayState" value="([^"]+)"`)
+	matches := re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		return errors.New("RelayState not found")
+	}
+	as.relayState = matches[1]
+	re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+	matches = re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		return errors.New("SAMLResponse not found")
+	}
+	as.samlRes = matches[1]
+	return nil
+}
+
+func (as *AuthSession) authReq13() error {
+	var data = strings.NewReader(`RelayState=` + strings.ReplaceAll(as.relayState, "&#x3a;", "%3A") + `&SAMLResponse=` + url.QueryEscape(as.samlRes))
+	req, err := http.NewRequest("POST", "https://gakujo.shizuoka.ac.jp/Shibboleth.sso/SAML2/POST", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://idp.shizuoka.ac.jp")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Sec-GPC", "1")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Referer", "https://idp.shizuoka.ac.jp/")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+	req.Header.Set("Priority", "u=0, i")
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Cache-Control", "no-cache")
+	resp, err := as.cmd.client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.New("unexpected status code")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	log.Default().Println("Response Body:", string(body))
+
 	return nil
 }
 
@@ -512,6 +694,21 @@ func (as *AuthSession) Auth() error {
 	if err != nil {
 		return err
 	}
-
+	err = as.authReq10()
+	if err != nil {
+		return err
+	}
+	err = as.authReq11()
+	if err != nil {
+		return err
+	}
+	err = as.authReq12()
+	if err != nil {
+		return err
+	}
+	err = as.authReq13()
+	if err != nil {
+		return err
+	}
 	return nil
 }
