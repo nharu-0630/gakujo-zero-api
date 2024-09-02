@@ -17,7 +17,7 @@ import (
 	"github.com/nharu-0630/gakujo-zero-api/tools"
 )
 
-type AuthSession struct {
+type LoginSession struct {
 	cmd        Cmd
 	username   string
 	password   string
@@ -35,8 +35,8 @@ type AuthSession struct {
 	samlRes    string
 }
 
-func NewAuthSession(c Cmd, username string, password string, secret string) *AuthSession {
-	return &AuthSession{
+func NewLoginSession(c Cmd, username string, password string, secret string) *LoginSession {
+	return &LoginSession{
 		cmd:      c,
 		username: username,
 		password: password,
@@ -44,7 +44,7 @@ func NewAuthSession(c Cmd, username string, password string, secret string) *Aut
 	}
 }
 
-func (as *AuthSession) authReq1() error {
+func (ls *LoginSession) req1() error {
 	req, err := http.NewRequest("GET", "https://gakujo.shizuoka.ac.jp/lcu-web/", nil)
 	if err != nil {
 		log.Fatal(err)
@@ -62,7 +62,7 @@ func (as *AuthSession) authReq1() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -74,12 +74,12 @@ func (as *AuthSession) authReq1() error {
 	if err != nil {
 		return err
 	}
-	as.token = csrf
+	ls.token = csrf
 	return nil
 }
 
-func (as *AuthSession) authReq2() error {
-	var data = strings.NewReader(`account=&password=&locale=ja&_csrf=` + as.token)
+func (ls *LoginSession) req2() error {
+	var data = strings.NewReader(`account=&password=&locale=ja&_csrf=` + ls.token)
 	req, err := http.NewRequest("POST", "https://gakujo.shizuoka.ac.jp/lcu-web/shibbolethLogin/sso?lang=ja", data)
 	if err != nil {
 		log.Fatal(err)
@@ -100,7 +100,7 @@ func (as *AuthSession) authReq2() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,12 +112,12 @@ func (as *AuthSession) authReq2() error {
 	if err != nil {
 		return err
 	}
-	as.token = csrf
+	ls.token = csrf
 	return nil
 }
 
-func (as *AuthSession) authReq3() error {
-	var data = strings.NewReader(`csrf_token=` + as.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_value.shib_idp_session_ss=&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&shib_idp_ls_value.shib_idp_persistent_ss=&shib_idp_ls_supported=true&_eventId_proceed=`)
+func (ls *LoginSession) req3() error {
+	var data = strings.NewReader(`csrf_token=` + ls.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_value.shib_idp_session_ss=&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&shib_idp_ls_value.shib_idp_persistent_ss=&shib_idp_ls_supported=true&_eventId_proceed=`)
 	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s1", data)
 	if err != nil {
 		log.Fatal(err)
@@ -138,7 +138,7 @@ func (as *AuthSession) authReq3() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func (as *AuthSession) authReq3() error {
 		return errors.New("unexpected status code")
 	}
 	config := matches[1]
-	as.config = make(map[string]string)
+	ls.config = make(map[string]string)
 	for _, line := range strings.Split(config, ",") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
@@ -166,15 +166,15 @@ func (as *AuthSession) authReq3() error {
 		}
 		key := strings.Trim(parts[0], `"`+"`")
 		value := strings.Trim(parts[1], `"`+"`")
-		as.config[key] = value
+		ls.config[key] = value
 	}
 
-	as.referer = resp.Request.URL.String()
+	ls.referer = resp.Request.URL.String()
 	return nil
 }
 
-func (as *AuthSession) authReq4() error {
-	var data = strings.NewReader(`{"username":"` + as.username + `","isOtherIdpSupported":true,"checkPhones":false,"isRemoteNGCSupported":true,"isCookieBannerShown":false,"isFidoSupported":true,"originalRequest":"` + as.config["sCtx"] + `","country":"JP","forceotclogin":false,"isExternalFederationDisallowed":false,"isRemoteConnectSupported":false,"federationFlags":0,"isSignup":false,"flowToken":"` + as.config["sFT"] + `","isAccessPassSupported":true,"isQrCodePinSupported":true}`)
+func (ls *LoginSession) req4() error {
+	var data = strings.NewReader(`{"username":"` + ls.username + `","isOtherIdpSupported":true,"checkPhones":false,"isRemoteNGCSupported":true,"isCookieBannerShown":false,"isFidoSupported":true,"originalRequest":"` + ls.config["sCtx"] + `","country":"JP","forceotclogin":false,"isExternalFederationDisallowed":false,"isRemoteConnectSupported":false,"federationFlags":0,"isSignup":false,"flowToken":"` + ls.config["sFT"] + `","isAccessPassSupported":true,"isQrCodePinSupported":true}`)
 	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/common/GetCredentialType?mkt=ja", data)
 	if err != nil {
 		log.Fatal(err)
@@ -182,12 +182,12 @@ func (as *AuthSession) authReq4() error {
 	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
-	req.Header.Set("Referer", as.referer)
-	req.Header.Set("hpgid", as.config["hpgid"])
-	req.Header.Set("hpgact", as.config["hpgact"])
-	req.Header.Set("canary", as.config["apiCanary"])
-	req.Header.Set("client-request-id", as.config["correlationId"])
-	req.Header.Set("hpgrequestid", as.config["sessionId"])
+	req.Header.Set("Referer", ls.referer)
+	req.Header.Set("hpgid", ls.config["hpgid"])
+	req.Header.Set("hpgact", ls.config["hpgact"])
+	req.Header.Set("canary", ls.config["apiCanary"])
+	req.Header.Set("client-request-id", ls.config["correlationId"])
+	req.Header.Set("hpgrequestid", ls.config["sessionId"])
 	req.Header.Set("Content-type", "application/json; charset=utf-8")
 	req.Header.Set("Origin", "https://login.microsoftonline.com")
 	req.Header.Set("DNT", "1")
@@ -200,7 +200,7 @@ func (as *AuthSession) authReq4() error {
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("TE", "trailers")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -218,23 +218,28 @@ func (as *AuthSession) authReq4() error {
 	if err != nil {
 		return err
 	}
-	as.credential = make(map[string]string)
+	ls.credential = make(map[string]string)
 	for key, value := range credentialMap {
-		as.credential[key] = fmt.Sprintf("%v", value)
+		ls.credential[key] = fmt.Sprintf("%v", value)
 	}
 	return nil
 }
 
-func (as *AuthSession) authReq5() error {
-	var data = strings.NewReader(`i13=0&login=` + url.QueryEscape(as.username) + `&loginfmt=` + url.QueryEscape(as.username) + `&type=11&LoginOptions=3&lrt=&lrtPartition=&hisRegion=&hisScaleUnit=&passwd=` + url.QueryEscape(as.password) + `&ps=2&psRNGCDefaultType=&psRNGCEntropy=&psRNGCSLK=&canary=` + url.QueryEscape(as.config["canary"]) + `&ctx=` + as.config["sCtx"] + `&hpgrequestid=` + as.config["sessionId"] + `&flowToken=` + as.credential["FlowToken"] + `&PPSX=&NewUser=1&FoundMSAs=&fspost=0&i21=0&CookieDisclosure=0&IsFidoSupported=1&isSignupPost=0&DfpArtifact=&i19=935791`)
-	req, err := http.NewRequest("POST", as.config["urlPost"], data)
+func (ls *LoginSession) req5() error {
+	var data = strings.NewReader(`i13=0&login=` + url.QueryEscape(ls.username) + `&loginfmt=` + url.QueryEscape(ls.username) + `&type=11&LoginOptions=3&lrt=&lrtPartition=&hisRegion=&hisScaleUnit=&passwd=` + url.QueryEscape(ls.password) + `&ps=2&psRNGCDefaultType=&psRNGCEntropy=&psRNGCSLK=&canary=` + url.QueryEscape(ls.config["canary"]) + `&ctx=` + ls.config["sCtx"] + `&hpgrequestid=` + ls.config["sessionId"] + `&flowToken=` + ls.credential["FlowToken"] + `&PPSX=&NewUser=1&FoundMSAs=&fspost=0&i21=0&CookieDisclosure=0&IsFidoSupported=1&isSignupPost=0&DfpArtifact=&i19=935791`)
+	url := ls.config["urlPost"]
+	if strings.HasPrefix(url, "/") {
+		url = "https://login.microsoftonline.com" + url
+	}
+
+	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
 		log.Fatal(err)
 	}
 	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
-	req.Header.Set("Referer", as.referer)
+	req.Header.Set("Referer", ls.referer)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Origin", "https://login.microsoftonline.com")
 	req.Header.Set("DNT", "1")
@@ -248,7 +253,7 @@ func (as *AuthSession) authReq5() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -267,7 +272,7 @@ func (as *AuthSession) authReq5() error {
 		return errors.New("config not found")
 	}
 	config := matches[1]
-	as.config = make(map[string]string)
+	ls.config = make(map[string]string)
 	for _, line := range strings.Split(config, ",") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
@@ -276,14 +281,14 @@ func (as *AuthSession) authReq5() error {
 		}
 		key := strings.Trim(parts[0], `"`+"`")
 		value := strings.Trim(parts[1], `"`+"`")
-		as.config[key] = value
+		ls.config[key] = value
 	}
 
 	return nil
 }
 
-func (as *AuthSession) authReq6() error {
-	var data = strings.NewReader(`{"AuthMethodId":"PhoneAppOTP","Method":"BeginAuth","ctx":"` + as.config["sCtx"] + `","flowToken":"` + as.config["sFT"] + `"}`)
+func (ls *LoginSession) req6() error {
+	var data = strings.NewReader(`{"AuthMethodId":"PhoneAppOTP","Method":"BeginAuth","ctx":"` + ls.config["sCtx"] + `","flowToken":"` + ls.config["sFT"] + `"}`)
 	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/common/SAS/BeginAuth", data)
 	if err != nil {
 		log.Fatal(err)
@@ -291,12 +296,12 @@ func (as *AuthSession) authReq6() error {
 	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
-	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
-	req.Header.Set("hpgid", as.config["hpgid"])
-	req.Header.Set("hpgact", as.config["hpgact"])
-	req.Header.Set("canary", as.config["apiCanary"])
-	req.Header.Set("client-request-id", as.config["correlationId"])
-	req.Header.Set("hpgrequestid", as.config["sessionId"])
+	req.Header.Set("Referer", strings.Replace(ls.config["urlLogout"], "uxlogout", "login", 1))
+	req.Header.Set("hpgid", ls.config["hpgid"])
+	req.Header.Set("hpgact", ls.config["hpgact"])
+	req.Header.Set("canary", ls.config["apiCanary"])
+	req.Header.Set("client-request-id", ls.config["correlationId"])
+	req.Header.Set("hpgrequestid", ls.config["sessionId"])
 	req.Header.Set("Content-type", "application/json; charset=utf-8")
 	req.Header.Set("Origin", "https://login.microsoftonline.com")
 	req.Header.Set("DNT", "1")
@@ -307,7 +312,7 @@ func (as *AuthSession) authReq6() error {
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -325,17 +330,17 @@ func (as *AuthSession) authReq6() error {
 	if err != nil {
 		return err
 	}
-	as.begin = make(map[string]string)
+	ls.begin = make(map[string]string)
 	for key, value := range beginData {
-		as.begin[key] = fmt.Sprintf("%v", value)
+		ls.begin[key] = fmt.Sprintf("%v", value)
 	}
 	return nil
 }
 
-func (as *AuthSession) authReq7() error {
-	as.timestamp = time.Now().Unix()
-	as.otp = strings.TrimSpace(fmt.Sprintf("%06d", tools.TOTP(as.secret, 30)))
-	var data = strings.NewReader(`{"Method":"EndAuth","SessionId":"` + as.begin["SessionId"] + `","FlowToken":"` + as.begin["FlowToken"] + `","Ctx":"` + as.config["sCtx"] + `","AuthMethodId":"PhoneAppOTP","AdditionalAuthData":"` + as.otp + `","PollCount":1}`)
+func (ls *LoginSession) req7() error {
+	ls.timestamp = time.Now().Unix()
+	ls.otp = strings.TrimSpace(fmt.Sprintf("%06d", tools.TOTP(ls.secret, 30)))
+	var data = strings.NewReader(`{"Method":"EndAuth","SessionId":"` + ls.begin["SessionId"] + `","FlowToken":"` + ls.begin["FlowToken"] + `","Ctx":"` + ls.config["sCtx"] + `","AuthMethodId":"PhoneAppOTP","AdditionalAuthData":"` + ls.otp + `","PollCount":1}`)
 	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/common/SAS/EndAuth", data)
 	if err != nil {
 		log.Fatal(err)
@@ -343,12 +348,12 @@ func (as *AuthSession) authReq7() error {
 	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
-	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
-	req.Header.Set("hpgid", as.config["hpgid"])
-	req.Header.Set("hpgact", as.config["hpgact"])
-	req.Header.Set("canary", as.config["apiCanary"])
-	req.Header.Set("client-request-id", as.config["correlationId"])
-	req.Header.Set("hpgrequestid", as.config["sessionId"])
+	req.Header.Set("Referer", strings.Replace(ls.config["urlLogout"], "uxlogout", "login", 1))
+	req.Header.Set("hpgid", ls.config["hpgid"])
+	req.Header.Set("hpgact", ls.config["hpgact"])
+	req.Header.Set("canary", ls.config["apiCanary"])
+	req.Header.Set("client-request-id", ls.config["correlationId"])
+	req.Header.Set("hpgrequestid", ls.config["sessionId"])
 	req.Header.Set("Content-type", "application/json; charset=utf-8")
 	req.Header.Set("Origin", "https://login.microsoftonline.com")
 	req.Header.Set("DNT", "1")
@@ -360,7 +365,7 @@ func (as *AuthSession) authReq7() error {
 	req.Header.Set("Priority", "u=0")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -380,15 +385,15 @@ func (as *AuthSession) authReq7() error {
 	if err != nil {
 		return err
 	}
-	as.end = make(map[string]string)
+	ls.end = make(map[string]string)
 	for key, value := range endData {
-		as.end[key] = fmt.Sprintf("%v", value)
+		ls.end[key] = fmt.Sprintf("%v", value)
 	}
 	return nil
 }
 
-func (as *AuthSession) authReq8() error {
-	var data = strings.NewReader(`type=19&GeneralVerify=false&request=` + as.end["Ctx"] + `&mfaLastPollStart=` + strconv.FormatInt(as.timestamp-10000, 10) + `&mfaLastPollEnd=` + strconv.FormatInt(as.timestamp+10000, 10) + `&mfaAuthMethod=PhoneAppOTP&otc=` + as.otp + `&login=` + url.QueryEscape(as.username) + `&flowToken=` + as.end["FlowToken"] + `&hpgrequestid=` + as.config["sessionId"] + `&sacxt=&hideSmsInMfaProofs=false&canary=` + url.QueryEscape(as.config["canary"]) + `&i19=16034`)
+func (ls *LoginSession) req8() error {
+	var data = strings.NewReader(`type=19&GeneralVerify=false&request=` + ls.end["Ctx"] + `&mfaLastPollStart=` + strconv.FormatInt(ls.timestamp-10000, 10) + `&mfaLastPollEnd=` + strconv.FormatInt(ls.timestamp+10000, 10) + `&mfaAuthMethod=PhoneAppOTP&otc=` + ls.otp + `&login=` + url.QueryEscape(ls.username) + `&flowToken=` + ls.end["FlowToken"] + `&hpgrequestid=` + ls.config["sessionId"] + `&sacxt=&hideSmsInMfaProofs=false&canary=` + url.QueryEscape(ls.config["canary"]) + `&i19=16034`)
 	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/common/SAS/ProcessAuth", data)
 	if err != nil {
 		log.Fatal(err)
@@ -396,7 +401,7 @@ func (as *AuthSession) authReq8() error {
 	req.Header.Set("User-Agent", configs.USER_AGENT)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "ja,en-US;q=0.7,en;q=0.3")
-	req.Header.Set("Referer", strings.Replace(as.config["urlLogout"], "uxlogout", "login", 1))
+	req.Header.Set("Referer", strings.Replace(ls.config["urlLogout"], "uxlogout", "login", 1))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Origin", "https://login.microsoftonline.com")
 	req.Header.Set("DNT", "1")
@@ -410,7 +415,7 @@ func (as *AuthSession) authReq8() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -430,7 +435,7 @@ func (as *AuthSession) authReq8() error {
 		return errors.New("config not found")
 	}
 	config := matches[1]
-	as.config = make(map[string]string)
+	ls.config = make(map[string]string)
 	for _, line := range strings.Split(config, ",") {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
@@ -439,13 +444,13 @@ func (as *AuthSession) authReq8() error {
 		}
 		key := strings.Trim(parts[0], `"`+"`")
 		value := strings.Trim(parts[1], `"`+"`")
-		as.config[key] = value
+		ls.config[key] = value
 	}
 	return nil
 }
 
-func (as *AuthSession) authReq9() error {
-	var data = strings.NewReader(`LoginOptions=1&type=28&ctx=` + as.config["sCtx"] + `&hpgrequestid=` + as.config["sessionId"] + `&flowToken=` + as.config["sFT"] + `&DontShowAgain=true&canary=` + url.QueryEscape(as.config["canary"]) + `&i19=3975`)
+func (ls *LoginSession) req9() error {
+	var data = strings.NewReader(`LoginOptions=1&type=28&ctx=` + ls.config["sCtx"] + `&hpgrequestid=` + ls.config["sessionId"] + `&flowToken=` + ls.config["sFT"] + `&DontShowAgain=true&canary=` + url.QueryEscape(ls.config["canary"]) + `&i19=3975`)
 	req, err := http.NewRequest("POST", "https://login.microsoftonline.com/kmsi", data)
 	if err != nil {
 		log.Fatal(err)
@@ -467,7 +472,7 @@ func (as *AuthSession) authReq9() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -486,12 +491,12 @@ func (as *AuthSession) authReq9() error {
 	if len(matches) == 0 {
 		return errors.New("SAMLResponse not found")
 	}
-	as.samlReq = matches[1]
+	ls.samlReq = matches[1]
 	return nil
 }
 
-func (as *AuthSession) authReq10() error {
-	var data = strings.NewReader(`SAMLResponse=` + url.QueryEscape(as.samlReq) + `&RelayState=e1s2`)
+func (ls *LoginSession) req10() error {
+	var data = strings.NewReader(`SAMLResponse=` + url.QueryEscape(ls.samlReq) + `&RelayState=e1s2`)
 	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/Authn/SAML2/POST/SSO", data)
 	if err != nil {
 		log.Fatal(err)
@@ -512,7 +517,7 @@ func (as *AuthSession) authReq10() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -524,12 +529,12 @@ func (as *AuthSession) authReq10() error {
 	if err != nil {
 		return err
 	}
-	as.token = csrf
+	ls.token = csrf
 	return nil
 }
 
-func (as *AuthSession) authReq11() error {
-	var data = strings.NewReader(`csrf_token=` + as.token + `&_shib_idp_consentIds=displayName&_shib_idp_consentIds=eduPersonAffiliation&_shib_idp_consentIds=eduPersonEntitlement&_shib_idp_consentIds=eduPersonPrincipalName&_shib_idp_consentIds=eduPersonScopedAffiliation&_shib_idp_consentIds=eduPersonTargetedID&_shib_idp_consentIds=employeeNumber&_shib_idp_consentIds=givenName&_shib_idp_consentIds=jaDisplayName&_shib_idp_consentIds=jaGivenName&_shib_idp_consentIds=jaOrganizationName&_shib_idp_consentIds=jaSurname&_shib_idp_consentIds=jaorganizationalUnit&_shib_idp_consentIds=mail&_shib_idp_consentIds=organizationName&_shib_idp_consentIds=organizationalUnitName&_shib_idp_consentIds=surname&_shib_idp_consentIds=uid&_shib_idp_consentOptions=_shib_idp_rememberConsent&_eventId_proceed=`)
+func (ls *LoginSession) req11() error {
+	var data = strings.NewReader(`csrf_token=` + ls.token + `&_shib_idp_consentIds=displayName&_shib_idp_consentIds=eduPersonAffiliation&_shib_idp_consentIds=eduPersonEntitlement&_shib_idp_consentIds=eduPersonPrincipalName&_shib_idp_consentIds=eduPersonScopedAffiliation&_shib_idp_consentIds=eduPersonTargetedID&_shib_idp_consentIds=employeeNumber&_shib_idp_consentIds=givenName&_shib_idp_consentIds=jaDisplayName&_shib_idp_consentIds=jaGivenName&_shib_idp_consentIds=jaOrganizationName&_shib_idp_consentIds=jaSurname&_shib_idp_consentIds=jaorganizationalUnit&_shib_idp_consentIds=mail&_shib_idp_consentIds=organizationName&_shib_idp_consentIds=organizationalUnitName&_shib_idp_consentIds=surname&_shib_idp_consentIds=uid&_shib_idp_consentOptions=_shib_idp_rememberConsent&_eventId_proceed=`)
 	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s3", data)
 	if err != nil {
 		log.Fatal(err)
@@ -551,7 +556,7 @@ func (as *AuthSession) authReq11() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -563,12 +568,12 @@ func (as *AuthSession) authReq11() error {
 	if err != nil {
 		return err
 	}
-	as.token = csrf
+	ls.token = csrf
 	return nil
 }
 
-func (as *AuthSession) authReq12() error {
-	var data = strings.NewReader(`csrf_token=` + as.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&_eventId_proceed=`)
+func (ls *LoginSession) req12() error {
+	var data = strings.NewReader(`csrf_token=` + ls.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&_eventId_proceed=`)
 	req, err := http.NewRequest("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s4", data)
 	if err != nil {
 		log.Fatal(err)
@@ -589,7 +594,7 @@ func (as *AuthSession) authReq12() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -608,18 +613,18 @@ func (as *AuthSession) authReq12() error {
 	if len(matches) == 0 {
 		return errors.New("RelayState not found")
 	}
-	as.relayState = matches[1]
+	ls.relayState = matches[1]
 	re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
 	matches = re.FindStringSubmatch(string(body))
 	if len(matches) == 0 {
 		return errors.New("SAMLResponse not found")
 	}
-	as.samlRes = matches[1]
+	ls.samlRes = matches[1]
 	return nil
 }
 
-func (as *AuthSession) authReq13() error {
-	var data = strings.NewReader(`RelayState=` + strings.ReplaceAll(as.relayState, "&#x3a;", "%3A") + `&SAMLResponse=` + url.QueryEscape(as.samlRes))
+func (ls *LoginSession) req13() error {
+	var data = strings.NewReader(`RelayState=` + strings.ReplaceAll(ls.relayState, "&#x3a;", "%3A") + `&SAMLResponse=` + url.QueryEscape(ls.samlRes))
 	req, err := http.NewRequest("POST", "https://gakujo.shizuoka.ac.jp/Shibboleth.sso/SAML2/POST", data)
 	if err != nil {
 		log.Fatal(err)
@@ -640,7 +645,7 @@ func (as *AuthSession) authReq13() error {
 	req.Header.Set("Priority", "u=0, i")
 	req.Header.Set("Pragma", "no-cache")
 	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := as.cmd.client.Do(req)
+	resp, err := ls.cmd.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -653,61 +658,63 @@ func (as *AuthSession) authReq13() error {
 	if err != nil {
 		return err
 	}
-	log.Default().Println("Response Body:", string(body))
-
-	return nil
+	if strings.Contains(string(body), "前回ログイン") {
+		return nil
+	}
+	return errors.New("unexpected response")
 }
 
-func (as *AuthSession) Auth() error {
-	err := as.authReq1()
+func (c *Cmd) Login(username string, password string, secret string) error {
+	ls := NewLoginSession(*c, username, password, secret)
+	err := ls.req1()
 	if err != nil {
 		return err
 	}
-	err = as.authReq2()
+	err = ls.req2()
 	if err != nil {
 		return err
 	}
-	err = as.authReq3()
+	err = ls.req3()
 	if err != nil {
 		return err
 	}
-	err = as.authReq4()
+	err = ls.req4()
 	if err != nil {
 		return err
 	}
-	err = as.authReq5()
+	err = ls.req5()
 	if err != nil {
 		return err
 	}
-	err = as.authReq6()
+	err = ls.req6()
 	if err != nil {
 		return err
 	}
-	err = as.authReq7()
+	err = ls.req7()
 	if err != nil {
 		return err
 	}
-	err = as.authReq8()
+	err = ls.req8()
 	if err != nil {
 		return err
 	}
-	err = as.authReq9()
+	err = ls.req9()
 	if err != nil {
 		return err
 	}
-	err = as.authReq10()
+	err = ls.req10()
 	if err != nil {
 		return err
 	}
-	err = as.authReq11()
+	err = ls.req11()
 	if err != nil {
 		return err
 	}
-	err = as.authReq12()
+	err = ls.req12()
 	if err != nil {
 		return err
 	}
-	err = as.authReq13()
+	err = ls.req13()
 	if err != nil {
 		return err
 	}

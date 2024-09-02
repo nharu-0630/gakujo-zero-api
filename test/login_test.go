@@ -8,16 +8,16 @@ import (
 	"github.com/nharu-0630/gakujo-zero-api/tools"
 )
 
-func TestAuthentication(t *testing.T) {
+func TestLogin(t *testing.T) {
 	tools.LoadEnv()
 	username := os.Getenv("GAKUJO_USERNAME")
 	password := os.Getenv("GAKUJO_PASSWORD")
 	secret := os.Getenv("GAKUJO_SECRET")
 
 	c := cmd.NewClient()
-	as := cmd.NewAuthSession(*c, username, password, secret)
-	err := as.Auth()
+	err := c.Login(username, password, secret)
 	if err != nil {
-		panic(err)
+		t.Error(err)
 	}
+	t.Log("Login successful")
 }
