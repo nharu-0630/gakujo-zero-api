@@ -1,6 +1,7 @@
 package test
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -15,9 +16,10 @@ func TestLogin(t *testing.T) {
 	secret := os.Getenv("GAKUJO_SECRET")
 
 	c := cmd.NewClient()
-	err := c.Login(username, password, secret)
+	name, err := c.Login(username, password, secret)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log("Login successful")
+	log.Default().Println("Login success")
+	log.Default().Printf("Name: %s\n", name)
 }

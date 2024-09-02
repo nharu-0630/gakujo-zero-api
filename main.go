@@ -14,7 +14,7 @@ func main() {
 	secret := os.Getenv("GAKUJO_SECRET")
 
 	c := cmd.NewClient()
-	err := c.Login(username, password, secret)
+	_, err := c.Login(username, password, secret)
 	if err != nil {
 		panic(err)
 	}
