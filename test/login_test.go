@@ -15,11 +15,16 @@ func TestLogin(t *testing.T) {
 	password := os.Getenv("GAKUJO_PASSWORD")
 	secret := os.Getenv("GAKUJO_SECRET")
 
-	c := cmd.NewClient()
-	name, err := c.Login(username, password, secret)
+	cmd, err := cmd.NewClient()
 	if err != nil {
 		t.Error(err)
+		return
 	}
-	log.Default().Println("Login success")
+	name, err := cmd.Login(username, password, secret)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Default().Println("Successfully logged in")
 	log.Default().Printf("Name: %s\n", name)
 }

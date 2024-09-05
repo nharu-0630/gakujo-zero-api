@@ -5,28 +5,46 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+
+	"go.nhat.io/cookiejar"
 )
 
 type Cmd struct {
 	client *http.Client
 }
 
-func NewClient() *Cmd {
-	jar, err := cookiejar.New(nil)
+func NewClient() (*Cmd, error) {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		jar, err = cookiejar.New(nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+		return nil, err
 	}
+	cacheDir := filepath.Join(homeDir, ".cache", ".gakujo-zero-api")
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		return nil, err
+	}
+	log.Default().Println("Cache directory:", cacheDir)
+	cachePath := filepath.Join(cacheDir, "cookies.json")
+	if _, err := os.Stat(cachePath); err == nil {
+		log.Default().Println("Cache file exists:", cachePath)
+	} else if os.IsNotExist(err) {
+		log.Default().Println("Cache file does not exist, will be created:", cachePath)
+	} else {
+		return nil, err
+	}
+	jar := cookiejar.NewPersistentJar(
+		cookiejar.WithFilePath(cachePath),
+		cookiejar.WithFilePerm(0755),
+		cookiejar.WithAutoSync(true),
+	)
 	return &Cmd{
 		client: &http.Client{
 			Jar: jar,
 		},
-	}
+	}, nil
 }
 
 func extractCSRFToken(resp *http.Response) (string, error) {
