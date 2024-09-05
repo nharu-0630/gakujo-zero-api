@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/nharu-0630/gakujo-zero-api/configs"
 	"github.com/nharu-0630/gakujo-zero-api/tools"
 )
@@ -23,7 +22,7 @@ type LoginSession struct {
 	username   string
 	password   string
 	secret     string
-	token      string
+	csrf       string
 	config     map[string]string
 	referer    string
 	credential map[string]string
@@ -69,12 +68,12 @@ func (ls *LoginSession) req1() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	ls.token = csrf
+	ls.csrf = csrf
 	return resp, nil
 }
 
 func (ls *LoginSession) req2() (*http.Response, error) {
-	data := strings.NewReader(`account=&password=&locale=ja&_csrf=` + ls.token)
+	data := strings.NewReader(`account=&password=&locale=ja&_csrf=` + ls.csrf)
 	headers := map[string]string{
 		"User-Agent":                configs.USER_AGENT,
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
@@ -102,13 +101,13 @@ func (ls *LoginSession) req2() (*http.Response, error) {
 		if err != nil {
 			return nil, err
 		}
-		ls.token = csrf
+		ls.csrf = csrf
 	}
 	return resp, nil
 }
 
 func (ls *LoginSession) req3() (*http.Response, error) {
-	data := strings.NewReader(`csrf_token=` + ls.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_value.shib_idp_session_ss=&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&shib_idp_ls_value.shib_idp_persistent_ss=&shib_idp_ls_supported=true&_eventId_proceed=`)
+	data := strings.NewReader(`csrf_token=` + ls.csrf + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_value.shib_idp_session_ss=&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&shib_idp_ls_value.shib_idp_persistent_ss=&shib_idp_ls_supported=true&_eventId_proceed=`)
 	headers := map[string]string{
 		"User-Agent":                configs.USER_AGENT,
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
@@ -414,12 +413,12 @@ func (ls *LoginSession) req10() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	ls.token = csrf
+	ls.csrf = csrf
 	return resp, nil
 }
 
 func (ls *LoginSession) req11() (*http.Response, error) {
-	data := strings.NewReader(`csrf_token=` + ls.token + `&_shib_idp_consentIds=displayName&_shib_idp_consentIds=eduPersonAffiliation&_shib_idp_consentIds=eduPersonEntitlement&_shib_idp_consentIds=eduPersonPrincipalName&_shib_idp_consentIds=eduPersonScopedAffiliation&_shib_idp_consentIds=eduPersonTargetedID&_shib_idp_consentIds=employeeNumber&_shib_idp_consentIds=givenName&_shib_idp_consentIds=jaDisplayName&_shib_idp_consentIds=jaGivenName&_shib_idp_consentIds=jaOrganizationName&_shib_idp_consentIds=jaSurname&_shib_idp_consentIds=jaorganizationalUnit&_shib_idp_consentIds=mail&_shib_idp_consentIds=organizationName&_shib_idp_consentIds=organizationalUnitName&_shib_idp_consentIds=surname&_shib_idp_consentIds=uid&_shib_idp_consentOptions=_shib_idp_rememberConsent&_eventId_proceed=`)
+	data := strings.NewReader(`csrf_token=` + ls.csrf + `&_shib_idp_consentIds=displayName&_shib_idp_consentIds=eduPersonAffiliation&_shib_idp_consentIds=eduPersonEntitlement&_shib_idp_consentIds=eduPersonPrincipalName&_shib_idp_consentIds=eduPersonScopedAffiliation&_shib_idp_consentIds=eduPersonTargetedID&_shib_idp_consentIds=employeeNumber&_shib_idp_consentIds=givenName&_shib_idp_consentIds=jaDisplayName&_shib_idp_consentIds=jaGivenName&_shib_idp_consentIds=jaOrganizationName&_shib_idp_consentIds=jaSurname&_shib_idp_consentIds=jaorganizationalUnit&_shib_idp_consentIds=mail&_shib_idp_consentIds=organizationName&_shib_idp_consentIds=organizationalUnitName&_shib_idp_consentIds=surname&_shib_idp_consentIds=uid&_shib_idp_consentOptions=_shib_idp_rememberConsent&_eventId_proceed=`)
 	headers := map[string]string{
 		"User-Agent":                configs.USER_AGENT,
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
@@ -447,12 +446,12 @@ func (ls *LoginSession) req11() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	ls.token = csrf
+	ls.csrf = csrf
 	return resp, nil
 }
 
 func (ls *LoginSession) req12() (*http.Response, error) {
-	data := strings.NewReader(`csrf_token=` + ls.token + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&_eventId_proceed=`)
+	data := strings.NewReader(`csrf_token=` + ls.csrf + `&shib_idp_ls_exception.shib_idp_session_ss=&shib_idp_ls_success.shib_idp_session_ss=true&shib_idp_ls_exception.shib_idp_persistent_ss=&shib_idp_ls_success.shib_idp_persistent_ss=true&_eventId_proceed=`)
 	headers := map[string]string{
 		"User-Agent":                configs.USER_AGENT,
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
@@ -522,80 +521,73 @@ func (ls *LoginSession) req13() (*http.Response, error) {
 	return resp, nil
 }
 
-func extractName(resp *http.Response) (string, error) {
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	resp.Body = io.NopCloser(strings.NewReader(string(body)))
-	if strings.Contains(string(body), "前回ログイン") {
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-		if err != nil {
-			return "", err
-		}
-		name := strings.Trim(doc.Find(".c-header-user-menu-name").Text(), " \n")
-		return name, nil
-	}
-	return "", errors.New("unexpected response")
-}
-
-func (c *Cmd) Login(username string, password string, secret string) (string, error) {
+func (c *Cmd) Login(username string, password string, secret string) error {
 	ls := NewLoginSession(*c, username, password, secret)
 	_, err := ls.req1()
 	if err != nil {
-		return "", err
+		return err
 	}
 	resp, err := ls.req2()
 	if err != nil {
-		return "", err
+		return err
 	}
 	if strings.Contains(resp.Request.URL.String(), "/lcu-web/SC_01002B00_00") {
 		log.Default().Println("Cached session is available")
-		return extractName(resp)
+		csrf, err := extractCSRFToken(resp)
+		if err != nil {
+			return err
+		}
+		c.csrf = csrf
+		return nil
 	}
 	_, err = ls.req3()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req4()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req5()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req6()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req7()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req8()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req9()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req10()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req11()
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = ls.req12()
 	if err != nil {
-		return "", err
+		return err
 	}
 	resp, err = ls.req13()
 	if err != nil {
-		return "", err
+		return err
 	}
-	return extractName(resp)
+	csrf, err := extractCSRFToken(resp)
+	if err != nil {
+		return err
+	}
+	c.csrf = csrf
+	return nil
 }

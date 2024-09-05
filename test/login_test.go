@@ -20,11 +20,24 @@ func TestLogin(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	name, err := cmd.Login(username, password, secret)
+	err = cmd.Login(username, password, secret)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	log.Default().Println("Successfully logged in")
-	log.Default().Printf("Name: %s\n", name)
+
+	userInformation, err := cmd.GetUserInformation()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Default().Println(userInformation)
+
+	importantNotice, err := cmd.GetImportantNotice()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Default().Println(importantNotice)
 }

@@ -15,6 +15,7 @@ import (
 
 type Cmd struct {
 	client *http.Client
+	csrf   string
 }
 
 func NewClient() (*Cmd, error) {

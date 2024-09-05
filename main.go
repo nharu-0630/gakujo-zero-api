@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = cmd.Login(username, password, secret)
+	err = cmd.Login(username, password, secret)
 	if err != nil {
 		panic(err)
 	}
