@@ -23,7 +23,7 @@ func NewClient() (*Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	cacheDir := filepath.Join(homeDir, ".cache", ".gakujo-zero-api")
+	cacheDir := filepath.Join(homeDir, ".cache", "gakujo-zero-api")
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return nil, err
 	}
