@@ -33,6 +33,7 @@ type LoginSession struct {
 	samlReq    string
 	relayState string
 	samlRes    string
+	execution  string
 }
 
 func NewLoginSession(c Cmd, username string, password string, secret string) *LoginSession {
@@ -95,6 +96,26 @@ func (ls *LoginSession) req2() (*http.Response, error) {
 	resp, err := ls.cmd.request("POST", "https://gakujo.shizuoka.ac.jp/lcu-web/shibbolethLogin/sso?lang=ja", data, headers)
 	if err != nil {
 		return nil, err
+	}
+	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body = io.NopCloser(strings.NewReader(string(body)))
+		re := regexp.MustCompile(`<input type="hidden" name="RelayState" value="([^"]+)"`)
+		matches := re.FindStringSubmatch(string(body))
+		if len(matches) == 0 {
+			return nil, errors.New("failed to extract RelayState")
+		}
+		ls.relayState = matches[1]
+		re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+		matches = re.FindStringSubmatch(string(body))
+		if len(matches) == 0 {
+			return nil, errors.New("failed to extract SAMLResponse")
+		}
+		ls.samlReq = matches[1]
+		return resp, nil
 	}
 	if !strings.Contains(resp.Request.URL.String(), "/lcu-web/SC_01002B00_00") {
 		csrf, err := extractCSRFToken(resp)
@@ -376,8 +397,14 @@ func (ls *LoginSession) req9() (*http.Response, error) {
 		return nil, err
 	}
 	resp.Body = io.NopCloser(strings.NewReader(string(body)))
-	re := regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+	re := regexp.MustCompile(`<input type="hidden" name="RelayState" value="([^"]+)"`)
 	matches := re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		return nil, errors.New("failed to extract RelayState")
+	}
+	ls.relayState = matches[1]
+	re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+	matches = re.FindStringSubmatch(string(body))
 	if len(matches) == 0 {
 		return nil, errors.New("failed to extract SAMLResponse")
 	}
@@ -386,7 +413,7 @@ func (ls *LoginSession) req9() (*http.Response, error) {
 }
 
 func (ls *LoginSession) req10() (*http.Response, error) {
-	data := strings.NewReader(`SAMLResponse=` + url.QueryEscape(ls.samlReq) + `&RelayState=e1s2`)
+	data := strings.NewReader(`SAMLResponse=` + url.QueryEscape(ls.samlReq) + `&RelayState=` + ls.relayState)
 	headers := map[string]string{
 		"User-Agent":                configs.USER_AGENT,
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
@@ -414,6 +441,23 @@ func (ls *LoginSession) req10() (*http.Response, error) {
 		return nil, err
 	}
 	ls.csrf = csrf
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = io.NopCloser(strings.NewReader(string(body)))
+	re := regexp.MustCompile(`<form action="([^"]+)" method="post"`)
+	matches := re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		re = regexp.MustCompile(`<form name="form1" action="([^"]+)" method="post"`)
+		matches = re.FindStringSubmatch(string(body))
+		if len(matches) == 0 {
+			return nil, errors.New("failed to extract action")
+		}
+		ls.execution = matches[1]
+		return nil, errors.New("failed to bypass")
+	}
+	ls.execution = matches[1]
 	return resp, nil
 }
 
@@ -428,7 +472,7 @@ func (ls *LoginSession) req11() (*http.Response, error) {
 		"DNT":                       "1",
 		"Sec-GPC":                   "1",
 		"Connection":                "keep-alive",
-		"Referer":                   "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s3",
+		"Referer":                   "https://idp.shizuoka.ac.jp" + ls.execution,
 		"Upgrade-Insecure-Requests": "1",
 		"Sec-Fetch-Dest":            "document",
 		"Sec-Fetch-Mode":            "navigate",
@@ -438,7 +482,7 @@ func (ls *LoginSession) req11() (*http.Response, error) {
 		"Pragma":                    "no-cache",
 		"Cache-Control":             "no-cache",
 	}
-	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s3", data, headers)
+	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp"+ls.execution, data, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -447,6 +491,17 @@ func (ls *LoginSession) req11() (*http.Response, error) {
 		return nil, err
 	}
 	ls.csrf = csrf
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = io.NopCloser(strings.NewReader(string(body)))
+	re := regexp.MustCompile(`<form name="form1" action="([^"]+)" method="post"`)
+	matches := re.FindStringSubmatch(string(body))
+	if len(matches) == 0 {
+		return nil, errors.New("failed to extract action")
+	}
+	ls.execution = matches[1]
 	return resp, nil
 }
 
@@ -461,7 +516,7 @@ func (ls *LoginSession) req12() (*http.Response, error) {
 		"DNT":                       "1",
 		"Sec-GPC":                   "1",
 		"Connection":                "keep-alive",
-		"Referer":                   "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s4",
+		"Referer":                   "https://idp.shizuoka.ac.jp" + ls.execution,
 		"Upgrade-Insecure-Requests": "1",
 		"Sec-Fetch-Dest":            "document",
 		"Sec-Fetch-Mode":            "navigate",
@@ -470,7 +525,7 @@ func (ls *LoginSession) req12() (*http.Response, error) {
 		"Pragma":                    "no-cache",
 		"Cache-Control":             "no-cache",
 	}
-	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s4", data, headers)
+	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp"+ls.execution, data, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -540,37 +595,56 @@ func (c *Cmd) Login(username string, password string, secret string) error {
 		c.csrf = csrf
 		return nil
 	}
-	_, err = ls.req3()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req4()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req5()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req6()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req7()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req8()
-	if err != nil {
-		return err
-	}
-	_, err = ls.req9()
-	if err != nil {
-		return err
+	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
+		log.Default().Println("Bypass MFA")
+	} else {
+		_, err = ls.req3()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req4()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req5()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req6()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req7()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req8()
+		if err != nil {
+			return err
+		}
+		_, err = ls.req9()
+		if err != nil {
+			return err
+		}
 	}
 	_, err = ls.req10()
 	if err != nil {
-		return err
+		if err.Error() == "failed to bypass" {
+			_, err = ls.req12()
+			if err != nil {
+				return err
+			}
+			resp, err = ls.req13()
+			if err != nil {
+				return err
+			}
+			csrf, err := extractCSRFToken(resp)
+			if err != nil {
+				return err
+			}
+			c.csrf = csrf
+			return nil
+		}
 	}
 	_, err = ls.req11()
 	if err != nil {
