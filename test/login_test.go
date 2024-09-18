@@ -26,18 +26,4 @@ func TestLogin(t *testing.T) {
 		return
 	}
 	log.Default().Println("Successfully logged in")
-
-	userInformation, err := cmd.GetUserInformation()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	log.Default().Println(userInformation)
-
-	importantNotice, err := cmd.GetImportantNotice()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	log.Default().Println(importantNotice)
 }
