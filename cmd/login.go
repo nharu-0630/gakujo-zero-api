@@ -151,12 +151,32 @@ func (ls *LoginSession) req3() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	config, err := extractConfig(resp)
-	if err != nil {
-		return nil, err
+	if !strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
+		config, err := extractConfig(resp)
+		if err != nil {
+			return nil, err
+		}
+		ls.config = config
+		ls.referer = resp.Request.URL.String()
+	} else {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body = io.NopCloser(strings.NewReader(string(body)))
+		re := regexp.MustCompile(`<input type="hidden" name="RelayState" value="([^"]+)"`)
+		matches := re.FindStringSubmatch(string(body))
+		if len(matches) == 0 {
+			return nil, errors.New("failed to extract RelayState")
+		}
+		ls.relayState = matches[1]
+		re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
+		matches = re.FindStringSubmatch(string(body))
+		if len(matches) == 0 {
+			return nil, errors.New("failed to extract SAMLResponse")
+		}
+		ls.samlReq = matches[1]
 	}
-	ls.config = config
-	ls.referer = resp.Request.URL.String()
 	return resp, nil
 }
 
@@ -596,35 +616,39 @@ func (c *Cmd) Login(username string, password string, secret string) error {
 		return nil
 	}
 	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
-		log.Default().Println("Bypass MFA")
+		log.Default().Println("Bypass MFA (1)")
 	} else {
-		_, err = ls.req3()
+		resp, err = ls.req3()
 		if err != nil {
 			return err
 		}
-		_, err = ls.req4()
-		if err != nil {
-			return err
-		}
-		_, err = ls.req5()
-		if err != nil {
-			return err
-		}
-		_, err = ls.req6()
-		if err != nil {
-			return err
-		}
-		_, err = ls.req7()
-		if err != nil {
-			return err
-		}
-		_, err = ls.req8()
-		if err != nil {
-			return err
-		}
-		_, err = ls.req9()
-		if err != nil {
-			return err
+		if !strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
+			_, err = ls.req4()
+			if err != nil {
+				return err
+			}
+			_, err = ls.req5()
+			if err != nil {
+				return err
+			}
+			_, err = ls.req6()
+			if err != nil {
+				return err
+			}
+			_, err = ls.req7()
+			if err != nil {
+				return err
+			}
+			_, err = ls.req8()
+			if err != nil {
+				return err
+			}
+			_, err = ls.req9()
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Default().Println("Bypass MFA (2)")
 		}
 	}
 	_, err = ls.req10()
