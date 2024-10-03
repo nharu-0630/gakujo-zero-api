@@ -63,6 +63,7 @@ func (ls *LoginSession) req1() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("GET", "https://gakujo.shizuoka.ac.jp/lcu-web/", nil, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req1")
 		return nil, err
 	}
 	csrf, err := extractCSRFToken(resp)
@@ -95,6 +96,7 @@ func (ls *LoginSession) req2() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://gakujo.shizuoka.ac.jp/lcu-web/shibbolethLogin/sso?lang=ja", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req2")
 		return nil, err
 	}
 	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
@@ -149,6 +151,7 @@ func (ls *LoginSession) req3() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp/idp/profile/SAML2/Redirect/SSO?execution=e1s1", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req3")
 		return nil, err
 	}
 	if !strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
@@ -207,6 +210,7 @@ func (ls *LoginSession) req4() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://login.microsoftonline.com/common/GetCredentialType?mkt=ja", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req4")
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -253,6 +257,7 @@ func (ls *LoginSession) req5() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", url, data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req5")
 		return nil, err
 	}
 	config, err := extractConfig(resp)
@@ -288,6 +293,7 @@ func (ls *LoginSession) req6() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://login.microsoftonline.com/common/SAS/BeginAuth", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req6")
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -335,6 +341,7 @@ func (ls *LoginSession) req7() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://login.microsoftonline.com/common/SAS/EndAuth", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req7")
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -377,6 +384,7 @@ func (ls *LoginSession) req8() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://login.microsoftonline.com/common/SAS/ProcessAuth", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req8")
 		return nil, err
 	}
 	config, err := extractConfig(resp)
@@ -410,6 +418,7 @@ func (ls *LoginSession) req9() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://login.microsoftonline.com/kmsi", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req9")
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -454,6 +463,7 @@ func (ls *LoginSession) req10() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp/idp/profile/Authn/SAML2/POST/SSO", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req10")
 		return nil, err
 	}
 	csrf, err := extractCSRFToken(resp)
@@ -504,6 +514,7 @@ func (ls *LoginSession) req11() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp"+ls.execution, data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req11")
 		return nil, err
 	}
 	csrf, err := extractCSRFToken(resp)
@@ -547,6 +558,7 @@ func (ls *LoginSession) req12() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://idp.shizuoka.ac.jp"+ls.execution, data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req12")
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -591,6 +603,7 @@ func (ls *LoginSession) req13() (*http.Response, error) {
 	}
 	resp, err := ls.cmd.request("POST", "https://gakujo.shizuoka.ac.jp/Shibboleth.sso/SAML2/POST", data, headers)
 	if err != nil {
+		log.Default().Println("Unexpected response on req13")
 		return nil, err
 	}
 	return resp, nil
@@ -608,6 +621,16 @@ func (c *Cmd) Login(username string, password string, secret string) error {
 	}
 	if strings.Contains(resp.Request.URL.String(), "/lcu-web/SC_01002B00_00") {
 		log.Default().Println("Cached session is available")
+		csrf, err := extractCSRFToken(resp)
+		if err != nil {
+			return err
+		}
+		c.csrf = csrf
+		return nil
+	}
+	if strings.Contains(resp.Request.URL.String(), "/lcu-web/SC_14002B00_03") {
+		log.Default().Println("Cached session is available")
+		log.Default().Println("Redirecting to important survey")
 		csrf, err := extractCSRFToken(resp)
 		if err != nil {
 			return err

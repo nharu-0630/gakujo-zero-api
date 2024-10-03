@@ -8,28 +8,38 @@ import (
 )
 
 type WarningNoticeInformation []struct {
-	WarningNoticeSize                     string        `json:"warningNoticeSize"`
-	WarningNoticeID                       string        `json:"warningNoticeId"`
-	WarningNoticeName                     string        `json:"warningNoticeName"`
-	WarningNoticeRequestPath              string        `json:"warningNoticeRequestPath"`
-	WarningNoticeDateExistence            string        `json:"warningNoticeDateExistence"`
-	WarningNoticeCountExistence           string        `json:"warningNoticeCountExistence"`
-	WarningNoticeStatusExistence          string        `json:"warningNoticeStatusExistence"`
-	WarningNoticeContent                  string        `json:"warningNoticeContent"`
-	WarningNoticeContentMonth             string        `json:"warningNoticeContentMonth"`
-	WarningNoticeContentMonthText         string        `json:"warningNoticeContentMonthText"`
-	WarningNoticeContentHalfSizeSlash     interface{}   `json:"warningNoticeContentHalfSizeSlash"`
-	WarningNoticeContentHalfSizeSlashText interface{}   `json:"warningNoticeContentHalfSizeSlashText"`
-	WarningNoticeContentDay               string        `json:"warningNoticeContentDay"`
-	WarningNoticeContentDayText           string        `json:"warningNoticeContentDayText"`
-	WarningNoticeContentCount             string        `json:"warningNoticeContentCount"`
-	WarningNoticeContentCountText         string        `json:"warningNoticeContentCountText"`
-	WarningNoticeStatusID                 string        `json:"warningNoticeStatusId"`
-	WarningNoticeStatusName               string        `json:"warningNoticeStatusName"`
-	StudyResultShortenedDisplayCount      interface{}   `json:"studyResultShortenedDisplayCount"`
-	ChartShortenedDisplayCount            interface{}   `json:"chartShortenedDisplayCount"`
-	WarningNoticeInformationDateList      []interface{} `json:"warningNoticeInformationDateList"`
-	WarningDisplayExamType                interface{}   `json:"warningDisplayExamType"`
+	WarningNoticeSize                     string      `json:"warningNoticeSize"`
+	WarningNoticeID                       string      `json:"warningNoticeId"`
+	WarningNoticeName                     string      `json:"warningNoticeName"`
+	WarningNoticeRequestPath              string      `json:"warningNoticeRequestPath"`
+	WarningNoticeDateExistence            string      `json:"warningNoticeDateExistence"`
+	WarningNoticeCountExistence           string      `json:"warningNoticeCountExistence"`
+	WarningNoticeStatusExistence          string      `json:"warningNoticeStatusExistence"`
+	WarningNoticeContent                  string      `json:"warningNoticeContent"`
+	WarningNoticeContentMonth             string      `json:"warningNoticeContentMonth"`
+	WarningNoticeContentMonthText         string      `json:"warningNoticeContentMonthText"`
+	WarningNoticeContentHalfSizeSlash     interface{} `json:"warningNoticeContentHalfSizeSlash"`
+	WarningNoticeContentHalfSizeSlashText interface{} `json:"warningNoticeContentHalfSizeSlashText"`
+	WarningNoticeContentDay               string      `json:"warningNoticeContentDay"`
+	WarningNoticeContentDayText           string      `json:"warningNoticeContentDayText"`
+	WarningNoticeContentCount             string      `json:"warningNoticeContentCount"`
+	WarningNoticeContentCountText         string      `json:"warningNoticeContentCountText"`
+	WarningNoticeStatusID                 string      `json:"warningNoticeStatusId"`
+	WarningNoticeStatusName               string      `json:"warningNoticeStatusName"`
+	StudyResultShortenedDisplayCount      interface{} `json:"studyResultShortenedDisplayCount"`
+	ChartShortenedDisplayCount            interface{} `json:"chartShortenedDisplayCount"`
+	WarningNoticeInformationDateList      []struct {
+		WarningNoticeContentDateTitle         string      `json:"warningNoticeContentDateTitle"`
+		WarningNoticeContentMonth             string      `json:"warningNoticeContentMonth"`
+		WarningNoticeContentMonthText         string      `json:"warningNoticeContentMonthText"`
+		WarningNoticeContentHalfSizeSlash     interface{} `json:"warningNoticeContentHalfSizeSlash"`
+		WarningNoticeContentHalfSizeSlashText string      `json:"warningNoticeContentHalfSizeSlashText"`
+		WarningNoticeContentDay               string      `json:"warningNoticeContentDay"`
+		WarningNoticeContentDayText           string      `json:"warningNoticeContentDayText"`
+		WarningNoticeStatusID                 string      `json:"warningNoticeStatusId"`
+		WarningNoticeStatusName               string      `json:"warningNoticeStatusName"`
+	} `json:"warningNoticeInformationDateList"`
+	WarningDisplayExamType interface{} `json:"warningDisplayExamType"`
 }
 
 func GetWarningNoticeInformation(resp *http.Response) (*WarningNoticeInformation, error) {
