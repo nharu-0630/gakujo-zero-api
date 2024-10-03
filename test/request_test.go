@@ -61,3 +61,13 @@ func TestWarningNoticeInformation(t *testing.T) {
 	log.Default().Println("Successfully got warning notice information")
 	log.Default().Println(warningNoticeInformation)
 }
+
+func TestSubmissionInformation(t *testing.T) {
+	submissionInformation, err := testCmd.GetSubmissionInformation()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Default().Println("Successfully got submission information")
+	log.Default().Println(submissionInformation)
+}
