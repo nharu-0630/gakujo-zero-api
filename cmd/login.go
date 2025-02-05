@@ -108,7 +108,13 @@ func (ls *LoginSession) req2() (*http.Response, error) {
 		re := regexp.MustCompile(`<input type="hidden" name="RelayState" value="([^"]+)"`)
 		matches := re.FindStringSubmatch(string(body))
 		if len(matches) == 0 {
-			return nil, errors.New("failed to extract RelayState")
+			config, err := extractConfig(resp)
+			if err != nil {
+				return nil, errors.New("failed to extract RelayState and config")
+			}
+			ls.config = config
+			ls.referer = resp.Request.URL.String()
+			return resp, nil
 		}
 		ls.relayState = matches[1]
 		re = regexp.MustCompile(`<input type="hidden" name="SAMLResponse" value="([^"]+)"`)
@@ -638,7 +644,7 @@ func (c *Cmd) Login(username string, password string, secret string) error {
 		c.csrf = csrf
 		return nil
 	}
-	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") {
+	if strings.Contains(resp.Request.URL.String(), "login.microsoftonline.com") && ls.referer == "" {
 		log.Default().Println("Bypass MFA (1)")
 	} else {
 		resp, err = ls.req3()
